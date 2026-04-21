@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pagos</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0d1117;color:#e6edf3;font-family:'Segoe UI',sans-serif;}
+.sidebar{width:220px;min-height:100vh;background:#161b22;border-right:1px solid #30363d;position:fixed;top:0;left:0;display:flex;flex-direction:column;}
+.sidebar .brand{padding:1.2rem 1rem;font-weight:800;font-size:1.1rem;color:#f59e0b;border-bottom:1px solid #30363d;}
+.sidebar a{display:block;padding:.6rem 1rem;color:#8b949e;text-decoration:none;border-left:3px solid transparent;}
+.sidebar a:hover,.sidebar a.active{color:#fff;background:rgba(255,255,255,.05);border-left-color:#f59e0b;}
+.sidebar-footer{margin-top:auto;padding:1rem;font-size:.8rem;color:#8b949e;border-top:1px solid #30363d;}
+.main{margin-left:220px;padding:1.5rem;}
+.topbar{background:#161b22;border-bottom:1px solid #30363d;padding:.75rem 1.5rem;margin-left:220px;position:sticky;top:0;z-index:99;display:flex;justify-content:space-between;align-items:center;}
+.card{background:#161b22;border:1px solid #30363d;border-radius:8px;}
+table{color:#e6edf3;width:100%;border-collapse:collapse;}
+thead tr{background:#21262d;}
+th{padding:.7rem 1rem;font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;color:#8b949e;text-align:left;border-bottom:1px solid #30363d;}
+td{padding:.8rem 1rem;font-size:.85rem;border-bottom:1px solid #21262d;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:rgba(255,255,255,.02);}
+.form-control,.form-select{background:#21262d;border:1px solid #30363d;color:#e6edf3;padding:.5rem .75rem;border-radius:6px;width:100%;font-size:.85rem;}
+.form-control:focus,.form-select:focus{outline:none;border-color:#f59e0b;}
+.form-label{font-size:.78rem;color:#8b949e;margin-bottom:.25rem;display:block;}
+.btn-submit{background:#f59e0b;border:none;color:#000;font-weight:700;padding:.6rem 1.5rem;border-radius:6px;cursor:pointer;width:100%;margin-top:.5rem;font-size:.9rem;}
+.btn-submit:hover{background:#d97706;}
+.alert-success{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#10b981;padding:.75rem;border-radius:6px;margin-bottom:1rem;font-size:.85rem;}
+.alert-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#ef4444;padding:.75rem;border-radius:6px;margin-bottom:1rem;font-size:.85rem;}
+.stat-box{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:1rem 1.5rem;}
+.stat-num{font-size:1.8rem;font-weight:800;color:#10b981;}
+.stat-label{font-size:.72rem;color:#8b949e;text-transform:uppercase;letter-spacing:1px;}
+.readonly-ref{color:#f59e0b;cursor:not-allowed;}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="brand">🚚 Entregas_Diego</div>
+  <nav class="mt-2">
+    <a href="{% url 'admin_dashboard' %}">📊 Dashboard</a>
+    <a href="{% url 'admin_pedidos' %}">📦 Pedidos</a>
+    <a href="{% url 'admin_repartidores' %}">🛵 Repartidores</a>
+    <a href="{% url 'admin_ranking' %}">🏆 Ranking</a>
+    <a href="{% url 'admin_pagos' %}" class="active">💳 Pagos</a>
+    <a href="{% url 'admin_reportes' %}">📋 Reportes</a>
+  </nav>
+  <div class="sidebar-footer">
+    {{ request.user.username }}<br>
+    <a href="{% url 'logout' %}" style="color:#ef4444;text-decoration:none">Cerrar sesión</a>
+  </div>
+</div>
+
+<div class="topbar">
+  <strong>💳 Pagos</strong>
+  <small style="color:#8b949e">Administrador</small>
+</div>
+
+<div class="main">
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="{% if 'Error' in msg.message %}alert-error{% else %}alert-success{% endif %}">
+      {{ msg }}
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Total ingresos -->
+  <div class="stat-box mb-3 d-inline-block">
+    <div class="stat-label">Total Ingresos</div>
+    <div class="stat-num">
+      ${% with total=0 %}
+        {% for p in pagos %}{% endfor %}
+        <span id="total-ingresos">
+          {{ pagos|length }}
+        </span>
+      {% endwith %}
+    </div>
+  </div>
+
+  <div class="row g-3">
+
+    <!-- Lista de pagos -->
+    <div class="col-lg-8">
+      <div class="card">
+        <div style="padding:.9rem 1.25rem;border-bottom:1px solid #30363d">
+          <strong style="color: white;">Pagos registrados ({{ pagos|length }})</strong>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Pedido</th>
+                <th>Cliente</th>
+                <th>Método</th>
+                <th>Monto</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for p in pagos %}
+            <tr>
+              <td style="color:#f59e0b">#{{ p.pago_id }}</td>
+              <td><code style="color:#8b949e">#{{ p.pedido_id }}</code></td>
+              <td>{{ p.pedido.cliente.nombre_completo }}</td>
+              <td>
+                <span style="padding:.2rem .7rem;border-radius:20px;font-size:.75rem;
+                  font-weight:600;background:rgba(56,189,248,.15);color:#38bdf8">
+                  {{ p.metodo_pago }}
+                </span>
+              </td>
+              <td style="font-weight:700;color:#10b981">${{ p.monto }}</td>
+              <td style="color:#8b949e;font-size:.8rem">{{ p.fecha_pago|date:"d/m/Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" style="text-align:center;padding:2rem;color:#8b949e">
+                Sin pagos registrados.
+              </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario -->
+    <div class="col-lg-4">
+      <div class="card p-3">
+        <strong style="display:block;margin-bottom:1.25rem;color: white;">➕ Registrar Pago</strong>
+
+        {% if not pedidos_sin_pago %}
+        <div style="text-align:center;color:#8b949e;padding:1rem;font-size:.85rem">
+          No hay pedidos pendientes de pago.
+        </div>
+        {% else %}
+        <form method="post" id="form-pago">
+          {% csrf_token %}
+
+          <div style="margin-bottom:.75rem">
+            <label class="form-label">Pedido *</label>
+            <select name="pedido_id" class="form-select" required
+                    onchange="actualizarFormulario(this)">
+              <option value="">Selecciona un pedido...</option>
+              {% for p in pedidos_sin_pago %}
+              <option value="{{ p.pedido_id }}" data-total="{{ p.total }}">
+                #{{ p.pedido_id }} — {{ p.cliente.nombre_completo }} (${{ p.total }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div style="margin-bottom:.75rem">
+            <label class="form-label">Método de pago *</label>
+            <select name="metodo_pago" class="form-select" required>
+              <option value="">Selecciona...</option>
+              <option value="Efectivo">💵 Efectivo</option>
+              <option value="Tarjeta">💳 Tarjeta</option>
+              <option value="Transferencia">🏦 Transferencia</option>
+              <option value="OXXO">🏪 OXXO</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom:.75rem">
+            <label class="form-label">Referencia</label>
+            <input type="text" name="referencia" id="referencia-input"
+                   class="form-control readonly-ref" readonly
+                   placeholder="Selecciona un pedido...">
+            <small style="color:#8b949e;font-size:.72rem">
+              cifrado
+            </small>
+          </div>
+
+          <div style="margin-bottom:.75rem">
+            <label class="form-label">Monto *</label>
+            <input type="number" name="monto" id="monto-input"
+                   class="form-control" min="0" step="0.01"
+                   placeholder="0.00" required>
+          </div>
+
+          <button type="submit" class="btn-submit">💳 Registrar Pago</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Calcular total ingresos
+document.addEventListener('DOMContentLoaded', () => {
+  const montos = [...document.querySelectorAll('tbody tr td:nth-child(5)')]
+    .map(td => parseFloat(td.textContent.replace('$','').replace(',','')) || 0);
+  const total = montos.reduce((a, b) => a + b, 0);
+  const el = document.getElementById('total-ingresos');
+  if (el) el.textContent =  total.toLocaleString('es-MX', {
+    minimumFractionDigits: 2, maximumFractionDigits: 2
+  });
+});
+
+function generarReferencia(pedidoId) {
+  const fecha = new Date();
+  const dd    = String(fecha.getDate()).padStart(2, '0');
+  const mm    = String(fecha.getMonth() + 1).padStart(2, '0');
+  const yy    = String(fecha.getFullYear()).slice(-2);
+  const rand  = Math.floor(Math.random() * 900000 + 100000);
+  return `REF-${pedidoId}-${dd}${mm}${yy}-${rand}`;
+}
+
+function actualizarFormulario(select) {
+  const opt   = select.options[select.selectedIndex];
+  const total = opt.getAttribute('data-total');
+  const id    = opt.getAttribute('value');
+
+  if (id && total) {
+    document.getElementById('monto-input').value     = total;
+    document.getElementById('referencia-input').value = generarReferencia(id);
+  } else {
+    document.getElementById('monto-input').value     = '';
+    document.getElementById('referencia-input').value = '';
+  }
+}
+</script>
+
+</body>
+</html>

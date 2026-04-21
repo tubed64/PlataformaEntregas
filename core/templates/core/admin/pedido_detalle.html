@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pedido #{{ pedido.pedido_id }}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0d1117;color:#e6edf3;font-family:'Segoe UI',sans-serif;}
+.sidebar{width:220px;min-height:100vh;background:#161b22;border-right:1px solid #30363d;position:fixed;top:0;left:0;display:flex;flex-direction:column;}
+.sidebar .brand{padding:1.2rem 1rem;font-weight:800;font-size:1.1rem;color:#f59e0b;border-bottom:1px solid #30363d;}
+.sidebar a{display:block;padding:.6rem 1rem;color:#8b949e;text-decoration:none;border-left:3px solid transparent;}
+.sidebar a:hover,.sidebar a.active{color:#fff;background:rgba(255,255,255,.05);border-left-color:#f59e0b;}
+.sidebar-footer{margin-top:auto;padding:1rem;font-size:.8rem;color:#8b949e;border-top:1px solid #30363d;}
+.main{margin-left:220px;padding:1.5rem;}
+.topbar{background:#161b22;border-bottom:1px solid #30363d;padding:.75rem 1.5rem;margin-left:220px;position:sticky;top:0;z-index:99;display:flex;gap:1rem;align-items:center;}
+.card{background:#161b22;border:1px solid #30363d;border-radius:8px;}
+.card-header{padding:.9rem 1.25rem;border-bottom:1px solid #30363d;font-weight:700;}
+.card-body{padding:1.25rem;}
+.lbl{font-size:.72rem;color:#8b949e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.25rem;}
+.val{font-size:.9rem;margin-bottom:1rem;}
+table{color:#e6edf3;width:100%;border-collapse:collapse;}
+thead tr{background:#21262d;}
+th{padding:.6rem 1rem;font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;color:#8b949e;text-align:left;border-bottom:1px solid #30363d;}
+td{padding:.75rem 1rem;font-size:.85rem;border-bottom:1px solid #21262d;}
+tr:last-child td{border-bottom:none;}
+.form-select{background:#21262d;border:1px solid #30363d;color:#e6edf3;padding:.4rem .75rem;border-radius:6px;font-size:.85rem;}
+.form-select:focus{outline:none;border-color:#f59e0b;}
+.btn-primary{background:#f59e0b;border:none;color:#000;font-weight:700;padding:.4rem 1rem;border-radius:6px;cursor:pointer;font-size:.85rem;}
+.btn-primary:hover{background:#d97706;}
+.btn-danger{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#ef4444;padding:.4rem 1rem;border-radius:6px;cursor:pointer;font-size:.85rem;}
+.btn-secondary{background:transparent;border:1px solid #30363d;color:#8b949e;padding:.4rem 1rem;border-radius:6px;text-decoration:none;font-size:.85rem;}
+.btn-secondary:hover{color:#e6edf3;border-color:#8b949e;}
+.alert-success{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#10b981;padding:.75rem;border-radius:6px;margin-bottom:1rem;font-size:.85rem;}
+.alert-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#ef4444;padding:.75rem;border-radius:6px;margin-bottom:1rem;font-size:.85rem;}
+.log-item{display:flex;gap:.75rem;padding:.5rem 0;border-bottom:1px solid #21262d;font-size:.8rem;}
+.log-item:last-child{border-bottom:none;}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="brand">🚚 Entregas_Diego</div>
+  <nav class="mt-2">
+    <a href="{% url 'admin_dashboard' %}">📊 Dashboard</a>
+    <a href="{% url 'admin_pedidos' %}" class="active">📦 Pedidos</a>
+    <a href="{% url 'admin_repartidores' %}">🛵 Repartidores</a>
+    <a href="{% url 'admin_ranking' %}">🏆 Ranking</a>
+    <a href="{% url 'admin_pagos' %}">💳 Pagos</a>
+    <a href="{% url 'admin_reportes' %}">📋 Reportes</a>
+  </nav>
+  <div class="sidebar-footer">
+    {{ request.user.username }}<br>
+    <a href="{% url 'logout' %}" style="color:#ef4444;text-decoration:none">Cerrar sesión</a>
+  </div>
+</div>
+
+<div class="topbar">
+  <a href="{% url 'admin_pedidos' %}" class="btn-secondary">← Pedidos</a>
+  <strong>Pedido #{{ pedido.pedido_id }}</strong>
+  <span style="padding:.2rem .75rem;border-radius:20px;font-size:.75rem;font-weight:600;
+    {% if pedido.estado == 'Entregado' %}background:rgba(16,185,129,.15);color:#10b981
+    {% elif pedido.estado == 'En tránsito' %}background:rgba(251,191,36,.15);color:#fbbf24
+    {% elif pedido.estado == 'Cancelado' %}background:rgba(239,68,68,.15);color:#ef4444
+    {% elif pedido.estado == 'Pendiente' %}background:rgba(148,163,184,.15);color:#94a3b8
+    {% else %}background:rgba(56,189,248,.15);color:#38bdf8{% endif %}">
+    {{ pedido.estado }}
+  </span>
+</div>
+
+<div class="main">
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="{% if 'Error' in msg.message %}alert-error{% else %}alert-success{% endif %}">
+      {{ msg }}
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row g-3">
+
+    <!-- Columna principal -->
+    <div class="col-lg-8">
+
+      <!-- Info del pedido -->
+      <div class="card mb-3">
+        <div class="card-header">📦 Información del Pedido</div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <div class="lbl">Fecha del pedido</div>
+              <div class="val">{{ pedido.fecha_pedido|date:"d/m/Y H:i" }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="lbl">Total</div>
+              <div class="val" style="color:#f59e0b;font-size:1.1rem;font-weight:700">
+                ${{ pedido.total }}
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="lbl">Estado actual</div>
+              <div class="val">{{ pedido.estado }}</div>
+            </div>
+            <div class="col-12">
+              <div class="lbl">Dirección de entrega</div>
+              <div class="val">{{ pedido.direccion_entrega }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cambiar estado -->
+      <div class="card mb-3">
+        <div class="card-header">🔄 Cambiar Estado del Pedido</div>
+        <div class="card-body">
+          <form method="post" style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+            {% csrf_token %}
+            <select name="estado" class="form-select" style="width:auto">
+              {% for val,label in pedido.ESTADO %}
+              <option value="{{ val }}" {% if pedido.estado == val %}selected{% endif %}>
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn-primary">Actualizar estado</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Productos -->
+      <div class="card mb-3">
+        <div class="card-header">🛍 Productos</div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Precio unit.</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for d in detalles %}
+            <tr>
+              <td>{{ d.producto }}</td>
+              <td>{{ d.cantidad }}</td>
+              <td>${{ d.precio_unitario }}</td>
+              <td style="font-weight:600;color:#f59e0b">${{ d.subtotal }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" style="text-align:center;padding:1.5rem;color:#8b949e">
+                Sin productos registrados.
+              </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Log de auditoría -->
+      {% if log_in or log_up %}
+      <div class="card">
+        <div class="card-header">🔍 Auditoría (Triggers SQL Server)</div>
+        <div class="card-body">
+          {% for l in log_in %}
+          <div class="log-item">
+            <span style="padding:.15rem .6rem;border-radius:4px;font-size:.72rem;font-weight:600;
+              background:rgba(16,185,129,.15);color:#10b981;white-space:nowrap">INSERT</span>
+            <span style="color:#8b949e">{{ l.fecha_registro|date:"d/m/Y H:i" }}</span>
+            <span>Estado: <strong>{{ l.estado }}</strong></span>
+            <span style="color:#8b949e">Total: ${{ l.total }}</span>
+          </div>
+          {% endfor %}
+          {% for l in log_up %}
+          <div class="log-item">
+            <span style="padding:.15rem .6rem;border-radius:4px;font-size:.72rem;font-weight:600;
+              background:rgba(56,189,248,.15);color:#38bdf8;white-space:nowrap">UPDATE</span>
+            <span style="color:#8b949e">{{ l.fecha_registro|date:"d/m/Y H:i" }}</span>
+            <span>Estado: <strong>{{ l.estado }}</strong></span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- Columna lateral -->
+    <div class="col-lg-4">
+
+      <!-- Cliente -->
+      <div class="card mb-3">
+        <div class="card-header">👤 Cliente</div>
+        <div class="card-body">
+          <div class="lbl">Nombre</div>
+          <div class="val">{{ pedido.cliente.nombre_completo }}</div>
+          <div class="lbl">Email</div>
+          <div class="val" style="font-size:.82rem">{{ pedido.cliente.email }}</div>
+          <div class="lbl">Teléfono</div>
+          <div class="val">{{ pedido.cliente.telefono }}</div>
+        </div>
+      </div>
+
+      <!-- Entrega -->
+      {% if entrega %}
+      <div class="card mb-3">
+        <div class="card-header">🚚 Entrega</div>
+        <div class="card-body">
+          <div class="lbl">Repartidor</div>
+          <div class="val">{{ entrega.repartidor.nombre_completo }}</div>
+          <div class="lbl">Vehículo</div>
+          <div class="val">{{ entrega.vehiculo.tipo }} — {{ entrega.vehiculo.placa }}</div>
+          <div class="lbl">Salida</div>
+          <div class="val">{{ entrega.fecha_salida|date:"d/m/Y H:i"|default:"—" }}</div>
+          {% if entrega.fecha_entrega %}
+          <div class="lbl">Entregado</div>
+          <div class="val" style="color:#10b981">{{ entrega.fecha_entrega|date:"d/m/Y H:i" }}</div>
+          {% endif %}
+          {% if entrega.estado != 'Entregado' %}
+          <div class="lbl" style="margin-top:.5rem">Actualizar estado entrega</div>
+          <form method="post"
+                action="{% url 'admin_actualizar_entrega' entrega.entrega_id %}"
+                style="display:flex;gap:.5rem;margin-top:.25rem">
+            {% csrf_token %}
+            <input type="hidden" name="pedido_id" value="{{ pedido.pedido_id }}">
+            <select name="estado" class="form-select" style="flex:1">
+              <option value="En tránsito" {% if entrega.estado == 'En tránsito' %}selected{% endif %}>🚛 En tránsito</option>
+              <option value="Entregado">✅ Entregado</option>
+              <option value="Fallido">❌ Fallido</option>
+            </select>
+            <button type="submit" class="btn-primary">OK</button>
+          </form>
+          {% else %}
+          <span style="padding:.2rem .75rem;border-radius:20px;font-size:.75rem;
+            font-weight:600;background:rgba(16,185,129,.15);color:#10b981">
+            ✅ Entregado
+          </span>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="card mb-3">
+        <div class="card-body text-center" style="padding:1.5rem">
+          <div style="color:#8b949e;font-size:.85rem;margin-bottom:.75rem">
+            Sin entrega asignada
+          </div>
+          {% if pedido.estado != 'Cancelado' and pedido.estado != 'Entregado' %}
+          <a href="{% url 'admin_asignar_entrega' pedido.pedido_id %}"
+             class="btn-primary" style="text-decoration:none;display:inline-block">
+            + Asignar Repartidor
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Pago -->
+      {% if pago %}
+      <div class="card">
+        <div class="card-header">💳 Pago</div>
+        <div class="card-body">
+          <div class="lbl">Método</div>
+          <div class="val">{{ pago.metodo_pago }}</div>
+          <div class="lbl">Monto</div>
+          <div class="val" style="color:#10b981;font-size:1.2rem;font-weight:700">
+            ${{ pago.monto }}
+          </div>
+          <div class="lbl">Fecha</div>
+          <div class="val">{{ pago.fecha_pago|date:"d/m/Y" }}</div>
+        </div>
+      </div>
+      {% else %}
+      <div class="card">
+        <div class="card-body text-center" style="padding:1.5rem">
+          <div style="color:#8b949e;font-size:.85rem;margin-bottom:.75rem">
+            Sin pago registrado
+          </div>
+          <a href="{% url 'admin_pagos' %}"
+             class="btn-primary" style="text-decoration:none;display:inline-block">
+            + Registrar Pago
+          </a>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

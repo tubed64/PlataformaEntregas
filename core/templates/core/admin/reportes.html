@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reportes y Auditoría</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0d1117;color:#e6edf3;font-family:'Segoe UI',sans-serif;}
+.sidebar{width:220px;min-height:100vh;background:#161b22;border-right:1px solid #30363d;position:fixed;top:0;left:0;display:flex;flex-direction:column;}
+.sidebar .brand{padding:1.2rem 1rem;font-weight:800;font-size:1.1rem;color:#f59e0b;border-bottom:1px solid #30363d;}
+.sidebar a{display:block;padding:.6rem 1rem;color:#8b949e;text-decoration:none;border-left:3px solid transparent;}
+.sidebar a:hover,.sidebar a.active{color:#fff;background:rgba(255,255,255,.05);border-left-color:#f59e0b;}
+.sidebar-footer{margin-top:auto;padding:1rem;font-size:.8rem;color:#8b949e;border-top:1px solid #30363d;}
+.main{margin-left:220px;padding:1.5rem;}
+.topbar{background:#161b22;border-bottom:1px solid #30363d;padding:.75rem 1.5rem;margin-left:220px;position:sticky;top:0;z-index:99;display:flex;justify-content:space-between;align-items:center;}
+.card{background:#161b22;border:1px solid #30363d;border-radius:8px;}
+.card-header{padding:.9rem 1.25rem;border-bottom:1px solid #30363d;font-weight:700;font-size:.95rem;display:flex;justify-content:space-between;align-items:center;}
+table{color:#e6edf3;width:100%;border-collapse:collapse;}
+thead tr{background:#21262d;}
+th{padding:.65rem 1rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;color:#8b949e;text-align:left;border-bottom:1px solid #30363d;}
+td{padding:.75rem 1rem;font-size:.83rem;border-bottom:1px solid #21262d;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:rgba(255,255,255,.02);}
+.tab-nav{display:flex;gap:0;border-bottom:1px solid #30363d;margin-bottom:1.5rem;flex-wrap:wrap;}
+.tab-btn{padding:.6rem 1.2rem;background:transparent;border:none;color:#8b949e;cursor:pointer;font-size:.88rem;border-bottom:2px solid transparent;transition:all .15s;}
+.tab-btn:hover{color:#e6edf3;}
+.tab-btn.active{color:#f59e0b;border-bottom-color:#f59e0b;font-weight:600;}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+.badge-frecuente{padding:.2rem .7rem;border-radius:20px;font-size:.75rem;font-weight:600;background:rgba(245,158,11,.15);color:#f59e0b;}
+.badge-normal{padding:.2rem .7rem;border-radius:20px;font-size:.75rem;font-weight:600;background:rgba(148,163,184,.12);color:#94a3b8;}
+.badge-insert{padding:.15rem .6rem;border-radius:4px;font-size:.72rem;font-weight:600;background:rgba(16,185,129,.15);color:#10b981;}
+.badge-update{padding:.15rem .6rem;border-radius:4px;font-size:.72rem;font-weight:600;background:rgba(56,189,248,.15);color:#38bdf8;}
+.badge-delete{padding:.15rem .6rem;border-radius:4px;font-size:.72rem;font-weight:600;background:rgba(239,68,68,.15);color:#ef4444;}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="brand">🚚 Entregas_Diego</div>
+  <nav class="mt-2">
+    <a href="{% url 'admin_dashboard' %}">📊 Dashboard</a>
+    <a href="{% url 'admin_pedidos' %}">📦 Pedidos</a>
+    <a href="{% url 'admin_repartidores' %}">🛵 Repartidores</a>
+    <a href="{% url 'admin_ranking' %}">🏆 Ranking</a>
+    <a href="{% url 'admin_pagos' %}">💳 Pagos</a>
+    <a href="{% url 'admin_reportes' %}" class="active">📋 Reportes</a>
+  </nav>
+  <div class="sidebar-footer">
+    {{ request.user.username }}<br>
+    <a href="{% url 'logout' %}" style="color:#ef4444;text-decoration:none">Cerrar sesión</a>
+  </div>
+</div>
+
+<div class="topbar">
+  <strong>📋 Reportes y Auditoría</strong>
+  <small style="color:#8b949e">SQL Server — CASE · PIVOT · Triggers</small>
+</div>
+
+<div class="main">
+
+  <!-- Tabs -->
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="showTab('reportes')">📊 Reportes</button>
+    <button class="tab-btn" onclick="showTab('pedidos-log')">📦 Log Pedidos</button>
+    <button class="tab-btn" onclick="showTab('entregas-log')">🚚 Log Entregas</button>
+    <button class="tab-btn" onclick="showTab('pagos-log')">💳 Log Pagos</button>
+  </div>
+
+  <!-- TAB: REPORTES -->
+  <div id="tab-reportes" class="tab-content active">
+    <div class="row g-3">
+
+      <!-- CASE: Clasificación de clientes -->
+      <div class="col-lg-5">
+        <div class="card">
+          <div class="card-header">
+            <span style="color: white;">👥 Clasificación de Clientes</span>
+            <small style="color:#8b949e;font-weight:400">CASE</small>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>Cliente</th><th>Pedidos</th><th>Tipo</th></tr></thead>
+              <tbody>
+              {% for c in clasificacion %}
+              <tr>
+                <td style="font-weight:600">{{ c.nombre_completo }}</td>
+                <td style="color:#f59e0b;font-weight:700">{{ c.total_pedidos }}</td>
+                <td>
+                  {% if c.tipo == 'Frecuente' %}
+                  <span class="badge-frecuente">⭐ Frecuente</span>
+                  {% else %}
+                  <span class="badge-normal">Regular</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3" style="text-align:center;padding:2rem;color:#8b949e">Sin datos.</td></tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PIVOT: Entregas por mes -->
+      <div class="col-lg-7">
+        <div class="card">
+          <div class="card-header">
+            <span style="color: white;">📅 Entregas por Mes</span>
+            <small style="color:#8b949e;font-weight:400">PIVOT</small>
+          </div>
+          <div style="padding:1.25rem">
+            <canvas id="pivotChart" height="160"></canvas>
+          </div>
+          <!-- Tabla pivot -->
+          <div style="overflow-x:auto;border-top:1px solid #30363d">
+            <table>
+              <thead>
+                <tr>
+                  {% for p in pivot %}<th style="text-align:center">{{ p.mes }}</th>{% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  {% for p in pivot %}
+                  <td style="text-align:center;font-weight:700;
+                    {% if p.total > 0 %}color:#10b981{% else %}color:#30363d{% endif %}">
+                    {{ p.total }}
+                  </td>
+                  {% endfor %}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB: LOG PEDIDOS -->
+  <div id="tab-pedidos-log" class="tab-content">
+    <div class="row g-3">
+
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <span>📝 INSERT — <code style="color:#10b981">trg_Pedidos_IN</code></span>
+            <small style="color:#8b949e;font-weight:400">{{ log_pedidos_in|length }} registros</small>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>Log ID</th><th>Pedido</th><th>Cliente</th><th>Estado</th><th>Total</th><th>Fecha registro</th></tr></thead>
+              <tbody>
+              {% for l in log_pedidos_in %}
+              <tr>
+                <td style="color:#8b949e">#{{ l.ID_log }}</td>
+                <td style="color:#f59e0b">#{{ l.pedido_id }}</td>
+                <td>{{ l.cliente_id }}</td>
+                <td><span class="badge-insert">INSERT</span> {{ l.estado }}</td>
+                <td>${{ l.total }}</td>
+                <td style="color:#8b949e;font-size:.78rem">{{ l.fecha_registro|date:"d/m/Y H:i:s" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" style="text-align:center;padding:2rem;color:#8b949e">Sin registros.</td></tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <span>✏️ UPDATE — <code style="color:#38bdf8">trg_Pedidos_UP</code></span>
+            <small style="color:#8b949e;font-weight:400">{{ log_pedidos_up|length }} registros</small>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>Log ID</th><th>Pedido</th><th>Cliente</th><th>Estado nuevo</th><th>Total</th><th>Fecha registro</th></tr></thead>
+              <tbody>
+              {% for l in log_pedidos_up %}
+              <tr>
+                <td style="color:#8b949e">#{{ l.ID_log }}</td>
+                <td style="color:#f59e0b">#{{ l.pedido_id }}</td>
+                <td>{{ l.cliente_id }}</td>
+                <td><span class="badge-update">UPDATE</span> {{ l.estado }}</td>
+                <td>${{ l.total }}</td>
+                <td style="color:#8b949e;font-size:.78rem">{{ l.fecha_registro|date:"d/m/Y H:i:s" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" style="text-align:center;padding:2rem;color:#8b949e">Sin registros.</td></tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <span>🗑 DELETE — <code style="color:#ef4444">trg_Pedidos_DEL</code></span>
+            <small style="color:#8b949e;font-weight:400">{{ log_pedidos_del|length }} registros</small>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>Log ID</th><th>Pedido</th><th>Estado</th><th>Total</th><th>Fecha registro</th></tr></thead>
+              <tbody>
+              {% for l in log_pedidos_del %}
+              <tr>
+                <td style="color:#8b949e">#{{ l.ID_log }}</td>
+                <td style="color:#f59e0b">#{{ l.pedido_id }}</td>
+                <td><span class="badge-delete">DELETE</span> {{ l.estado }}</td>
+                <td>${{ l.total }}</td>
+                <td style="color:#8b949e;font-size:.78rem">{{ l.fecha_registro|date:"d/m/Y H:i:s" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" style="text-align:center;padding:2rem;color:#8b949e">Sin registros.</td></tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB: LOG ENTREGAS -->
+  <div id="tab-entregas-log" class="tab-content">
+    <div class="row g-3">
+
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <span>📝 INSERT — <code style="color:#10b981">trg_Entregas_IN</code></span>
+            <small style="color:#8b949e;font-weight:400">{{ log_entregas_in|length }} registros</small>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>Log ID</th><th>Entrega</th><th>Pedido</th><th>Repartidor</th><th>Estado</th><th>Fecha registro</th></tr></thead>
+              <tbody>
+              {% for l in log_entregas_in %}
+              <tr>
+                <td style="color:#8b949e">#{{ l.ID_log }}</td>
+                <td style="color:#f59e0b">#{{ l.entrega_id }}</td>
+                <td>#{{ l.pedido_id }}</td>
+                <td>#{{ l.repartidor_id }}</td>
+                <td><span class="badge-insert">INSERT</span> {{ l.estado }}</td>
+                <td style="color:#8b949e;font-size:.78rem">{{ l.fecha_registro|date:"d/m/Y H:i:s" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" style="text-align:center;padding:2rem;color:#8b949e">Sin registros.</td></tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <span>✏️ UPDATE — <code style="color:#38bdf8">trg_Entregas_UP</code></span>
+            <small style="color:#8b949e;font-weight:400">{{ log_entregas_up|length }} registros</small>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>Log ID</th><th>Entrega</th><th>Pedido</th><th>Repartidor</th><th>Estado nuevo</th><th>Fecha registro</th></tr></thead>
+              <tbody>
+              {% for l in log_entregas_up %}
+              <tr>
+                <td style="color:#8b949e">#{{ l.ID_log }}</td>
+                <td style="color:#f59e0b">#{{ l.entrega_id }}</td>
+                <td>#{{ l.pedido_id }}</td>
+                <td>#{{ l.repartidor_id }}</td>
+                <td><span class="badge-update">UPDATE</span> {{ l.estado }}</td>
+                <td style="color:#8b949e;font-size:.78rem">{{ l.fecha_registro|date:"d/m/Y H:i:s" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" style="text-align:center;padding:2rem;color:#8b949e">Sin registros.</td></tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB: LOG PAGOS -->
+  <div id="tab-pagos-log" class="tab-content">
+    <div class="card">
+      <div class="card-header">
+        <span>📝 INSERT — <code style="color:#10b981">trg_Pagos_IN</code></span>
+        <small style="color:#8b949e;font-weight:400">{{ log_pagos_in|length }} registros</small>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Log ID</th><th>Pago</th><th>Pedido</th><th>Método</th><th>Monto</th><th>Fecha registro</th></tr></thead>
+          <tbody>
+          {% for l in log_pagos_in %}
+          <tr>
+            <td style="color:#8b949e">#{{ l.ID_log }}</td>
+            <td style="color:#f59e0b">#{{ l.pago_id }}</td>
+            <td>#{{ l.pedido_id }}</td>
+            <td>
+              <span style="padding:.2rem .7rem;border-radius:20px;font-size:.75rem;font-weight:600;background:rgba(56,189,248,.15);color:#38bdf8">
+                {{ l.metodo_pago }}
+              </span>
+            </td>
+            <td style="color:#10b981;font-weight:700">${{ l.monto }}</td>
+            <td style="color:#8b949e;font-size:.78rem">{{ l.fecha_registro|date:"d/m/Y H:i:s" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" style="text-align:center;padding:2rem;color:#8b949e">Sin registros.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Gráfica PIVOT
+const ctx = document.getElementById('pivotChart');
+if (ctx) {
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: [{% for p in pivot %}'{{ p.mes }}',{% endfor %}],
+      datasets: [{
+        label: 'Entregas',
+        data: [{% for p in pivot %}{{ p.total }},{% endfor %}],
+        backgroundColor: 'rgba(16,185,129,.8)',
+        borderRadius: 5,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#161b22',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          titleColor: '#e6edf3',
+          bodyColor: '#8b949e',
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
+        y: { ticks: { color: '#8b949e', stepSize: 1 }, grid: { color: '#21262d' }, beginAtZero: true }
+      }
+    }
+  });
+}
+</script>
+
+</body>
+</html>

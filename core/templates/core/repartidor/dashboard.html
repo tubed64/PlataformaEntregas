@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel Repartidor</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0d1117;color:#e6edf3;font-family:'Segoe UI',sans-serif;}
+.navbar{background:#161b22;border-bottom:1px solid #30363d;padding:.9rem 2rem;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;}
+.navbar .brand{font-size:1.2rem;font-weight:800;color:#f59e0b;}
+.user{display:flex;align-items:center;gap:1rem;font-size:.88rem;}
+.user span{color:#8b949e;}
+.btn-logout{background:transparent;border:1px solid #30363d;color:#ef4444;
+  padding:.3rem .9rem;border-radius:6px;text-decoration:none;font-size:.82rem;transition:all .2s;}
+.btn-logout:hover{background:rgba(239,68,68,.1);color:#ef4444;}
+
+.main{max-width:1100px;margin:0 auto;padding:2rem 1.5rem;}
+
+.rep-card{
+  background:#161b22;border:1px solid #30363d;border-radius:12px;
+  padding:1.5rem 2rem;margin-bottom:2rem;
+  display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;
+}
+.rep-avatar{
+  width:56px;height:56px;border-radius:50%;
+  background:rgba(56,189,248,.15);border:2px solid rgba(56,189,248,.3);
+  display:flex;align-items:center;justify-content:center;font-size:1.5rem;
+}
+.rep-info h3{font-size:1.1rem;font-weight:700;margin-bottom:.25rem;}
+.rep-info p{color:#8b949e;font-size:.85rem;margin:0;}
+.rep-badge{
+  margin-left:auto;padding:.3rem .9rem;border-radius:20px;font-size:.78rem;font-weight:600;
+  background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3);
+}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem;}
+.stat-card{background:#161b22;border:1px solid #30363d;border-radius:10px;
+  padding:1.25rem;text-align:center;}
+.stat-num{font-size:2rem;font-weight:800;margin-bottom:.25rem;}
+.stat-label{font-size:.72rem;color:#8b949e;text-transform:uppercase;letter-spacing:1px;}
+
+.card{background:#161b22;border:1px solid #30363d;border-radius:10px;}
+.card-header{padding:.9rem 1.25rem;border-bottom:1px solid #30363d;
+  display:flex;align-items:center;justify-content:space-between;}
+.card-header strong{font-size:.95rem;}
+
+table{width:100%;border-collapse:collapse;color:#e6edf3;}
+thead tr{background:#21262d;}
+th{padding:.7rem 1rem;font-size:.75rem;text-transform:uppercase;
+  letter-spacing:.5px;color:#8b949e;text-align:left;border-bottom:1px solid #30363d;}
+td{padding:.8rem 1rem;font-size:.85rem;border-bottom:1px solid #21262d;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:rgba(255,255,255,.02);}
+
+.badge-estado{display:inline-block;padding:.2rem .75rem;
+  border-radius:20px;font-size:.75rem;font-weight:600;}
+.badge-transito{background:rgba(251,191,36,.15);color:#fbbf24;}
+.badge-entregado{background:rgba(16,185,129,.15);color:#10b981;}
+.badge-fallido{background:rgba(239,68,68,.15);color:#ef4444;}
+
+.form-select-sm{
+  background:#21262d;border:1px solid #30363d;color:#e6edf3;
+  padding:.3rem .6rem;border-radius:5px;font-size:.78rem;cursor:pointer;
+}
+.form-select-sm:focus{outline:none;border-color:#f59e0b;}
+.btn-update{
+  background:#f59e0b;border:none;color:#000;font-weight:700;
+  padding:.3rem .8rem;border-radius:5px;cursor:pointer;font-size:.78rem;
+  transition:background .2s;
+}
+.btn-update:hover{background:#d97706;}
+
+.empty{text-align:center;padding:3rem;color:#8b949e;}
+.empty-icon{font-size:3rem;margin-bottom:1rem;}
+
+.alert-success{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);
+  color:#10b981;padding:.75rem 1rem;border-radius:6px;margin-bottom:1rem;font-size:.85rem;}
+.alert-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
+  color:#ef4444;padding:.75rem 1rem;border-radius:6px;margin-bottom:1rem;font-size:.85rem;}
+
+@media(max-width:600px){
+  .stats{grid-template-columns:1fr 1fr;}
+  th:nth-child(4),td:nth-child(4){display:none;}
+}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="brand">🚚 PlataformaEntregas</div>
+  <div class="user">
+    <span>🛵 {% if rep %}{{ rep.nombre_completo }}{% else %}{{ request.user.username }}{% endif %}</span>
+    <a href="{% url 'logout' %}" class="btn-logout">Cerrar sesión</a>
+  </div>
+</nav>
+
+<div class="main">
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="{% if 'Error' in msg.message %}alert-error{% else %}alert-success{% endif %}">
+      {{ msg }}
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Info del repartidor -->
+  {% if rep %}
+  <div class="rep-card">
+    <div class="rep-avatar">🛵</div>
+    <div class="rep-info">
+      <h3>{{ rep.nombre_completo }}</h3>
+      <p>Usuario: {{ rep.usuario }}</p>
+    </div>
+    <span class="rep-badge">
+      {% if rep.estado == 'Activo' %}✅ Activo{% else %}⛔ Inactivo{% endif %}
+    </span>
+  </div>
+  {% endif %}
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-num" style="color:#38bdf8">{{ entregas|length }}</div>
+      <div class="stat-label">Total asignadas</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:#fbbf24">{{ en_transito }}</div>
+      <div class="stat-label">En tránsito</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:#10b981">{{ entregados }}</div>
+      <div class="stat-label">Entregadas</div>
+    </div>
+  </div>
+
+  <!-- Tabla de entregas -->
+  <div class="card">
+    <div class="card-header">
+      <strong style="color: white;">Mis Entregas</strong>
+      <span style="font-size:.8rem;color:#8b949e">{{ entregas|length }} entrega(s)</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Entrega</th>
+            <th>Cliente</th>
+            <th>Dirección</th>
+            <th>Fecha salida</th>
+            <th>Estado</th>
+            <th>Actualizar</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for e in entregas %}
+        <tr>
+          <td style="color:#f59e0b;font-weight:700">#{{ e.entrega_id }}</td>
+          <td>{{ e.pedido.cliente.nombre_completo }}</td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8b949e">
+            {{ e.pedido.direccion_entrega }}
+          </td>
+          <td style="color:#8b949e;font-size:.8rem">
+            {{ e.fecha_salida|date:"d/m/Y H:i"|default:"—" }}
+          </td>
+          <td>
+            <span class="badge-estado
+              {% if e.estado == 'En tránsito' %}badge-transito
+              {% elif e.estado == 'Entregado' %}badge-entregado
+              {% else %}badge-fallido{% endif %}">
+              {% if e.estado == 'En tránsito' %}🚛
+              {% elif e.estado == 'Entregado' %}✅
+              {% else %}❌{% endif %}
+              {{ e.estado }}
+            </span>
+          </td>
+          <td>
+            {% if e.estado != 'Entregado' %}
+            <form method="post" style="display:flex;gap:.5rem;align-items:center">
+              {% csrf_token %}
+              <input type="hidden" name="entrega_id" value="{{ e.entrega_id }}">
+              <select name="estado" class="form-select-sm">
+                <option value="En tránsito" {% if e.estado == 'En tránsito' %}selected{% endif %}>🚛 En tránsito</option>
+                <option value="Entregado"   {% if e.estado == 'Entregado'   %}selected{% endif %}>✅ Entregado</option>
+                <option value="Fallido"     {% if e.estado == 'Fallido'     %}selected{% endif %}>❌ Fallido</option>
+              </select>
+              <button type="submit" class="btn-update">Actualizar</button>
+            </form>
+            {% else %}
+            <span style="color:#8b949e;font-size:.8rem">
+              {{ e.fecha_entrega|date:"d/m/Y H:i" }}
+            </span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="empty">
+              <div class="empty-icon">📭</div>
+              <p>No tienes entregas asignadas aún.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Repartidores</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0d1117;color:#e6edf3;font-family:'Segoe UI',sans-serif;}
+.sidebar{width:220px;min-height:100vh;background:#161b22;border-right:1px solid #30363d;position:fixed;top:0;left:0;}
+.sidebar .brand{padding:1.2rem 1rem;font-weight:800;font-size:1.1rem;color:#f59e0b;border-bottom:1px solid #30363d;}
+.sidebar a{display:block;padding:.6rem 1rem;color:#8b949e;text-decoration:none;border-left:3px solid transparent;}
+.sidebar a:hover,.sidebar a.active{color:#fff;background:rgba(255,255,255,.05);border-left-color:#f59e0b;}
+.main{margin-left:220px;padding:1.5rem;}
+.topbar{background:#161b22;border-bottom:1px solid #30363d;padding:.75rem 1.5rem;margin-left:220px;position:sticky;top:0;z-index:99;display:flex;justify-content:space-between;align-items:center;}
+.card{background:#161b22;border:1px solid #30363d;border-radius:8px;}
+table{color:#e6edf3;width:100%;border-collapse:collapse;}
+thead tr{background:#21262d;}
+th{padding:.7rem 1rem;font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;color:#8b949e;text-align:left;border-bottom:1px solid #30363d;}
+td{padding:.8rem 1rem;font-size:.85rem;border-bottom:1px solid #21262d;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:rgba(255,255,255,.02);}
+.form-control,.form-select{background:#21262d;border:1px solid #30363d;color:#e6edf3;padding:.5rem .75rem;border-radius:6px;width:100%;font-size:.85rem;}
+.form-control:focus,.form-select:focus{outline:none;border-color:#f59e0b;}
+.form-label{font-size:.78rem;color:#8b949e;margin-bottom:.25rem;display:block;}
+.btn-submit{background:#f59e0b;border:none;color:#000;font-weight:700;padding:.6rem 1.5rem;border-radius:6px;cursor:pointer;width:100%;margin-top:.5rem;}
+.btn-submit:hover{background:#d97706;}
+.alert-success{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#10b981;padding:.75rem;border-radius:6px;margin-bottom:1rem;font-size:.85rem;}
+.alert-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#ef4444;padding:.75rem;border-radius:6px;margin-bottom:1rem;font-size:.85rem;}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="brand">🚚 Entregas_Diego</div>
+  <nav class="mt-2">
+    <a href="{% url 'admin_dashboard' %}">📊 Dashboard</a>
+    <a href="{% url 'admin_pedidos' %}">📦 Pedidos</a>
+    <a href="{% url 'admin_repartidores' %}" class="active">🛵 Repartidores</a>
+    <a href="{% url 'admin_ranking' %}">🏆 Ranking</a>
+    <a href="{% url 'admin_pagos' %}">💳 Pagos</a>
+    <a href="{% url 'admin_reportes' %}">📋 Reportes</a>
+  </nav>
+  <div style="position:absolute;bottom:1rem;padding:1rem;font-size:.8rem;color:#8b949e;border-top:1px solid #30363d;width:100%">
+    {{ request.user.username }}<br>
+    <a href="{% url 'logout' %}" style="color:#ef4444;text-decoration:none">Cerrar sesión</a>
+  </div>
+</div>
+
+<div class="topbar">
+  <strong >Repartidores</strong>
+  <small style="color:#8b949e">Administrador</small>
+</div>
+
+<div class="main">
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="{% if 'Error' in msg.message %}alert-error{% else %}alert-success{% endif %}">{{ msg }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row g-3">
+    <!-- Lista -->
+    <div class="col-lg-8">
+      <div class="card">
+        <div style="padding:.9rem 1.25rem;border-bottom:1px solid #30363d">
+          <strong style="color: white;">Repartidores registrados</strong>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>ID</th><th>Nombre</th><th>Usuario</th><th>Teléfono</th><th>Estado</th></tr></thead>
+            <tbody>
+            {% for r in repartidores %}
+            <tr>
+              <td style="color:#f59e0b">#{{ r.repartidor_id }}</td>
+              <td>{{ r.nombre_completo }}</td>
+              <td style="color:#8b949e">{{ r.usuario }}</td>
+              <td>{{ r.telefono }}</td>
+              <td>
+                <span style="padding:.2rem .75rem;border-radius:20px;font-size:.75rem;font-weight:600;
+                  {% if r.estado == 'Activo' %}background:rgba(16,185,129,.15);color:#10b981
+                  {% else %}background:rgba(239,68,68,.15);color:#ef4444{% endif %}">
+                  {{ r.estado }}
+                </span>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center;padding:2rem;color:#8b949e">Sin repartidores.</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario nuevo repartidor -->
+    <div class="col-lg-4">
+      <div class="card" style="padding:1.5rem">
+        <strong style="display:block;margin-bottom:1.25rem;color: white;">➕ Nuevo Repartidor</strong>
+        <form method="post">
+          {% csrf_token %}
+          <div style="margin-bottom:.75rem">
+            <label class="form-label">Nombre completo *</label>
+            <input type="text" name="nombre" class="form-control" placeholder="Carlos Ruiz" required>
+          </div>
+          <div style="margin-bottom:.75rem">
+            <label class="form-label">Teléfono</label>
+            <input type="tel" name="telefono" class="form-control" placeholder="55 1234 5678">
+          </div>
+          <div style="margin-bottom:.75rem">
+            <label class="form-label">Usuario (para login) *</label>
+            <input type="text" name="usuario" class="form-control" placeholder="carlos.ruiz" required>
+          </div>
+          <div style="margin-bottom:.75rem">
+            <label class="form-label">Contraseña *</label>
+            <input type="password" name="contrasena" class="form-control" required>
+          </div>
+          <div style="margin-bottom:.75rem">
+            <label class="form-label">Número de licencia *</label>
+            <input type="text" name="licencia" class="form-control" placeholder="LIC123456" required>
+            <small style="color:#8b949e;font-size:.72rem">cifrado</small>
+          </div>
+          <button type="submit" class="btn-submit">Registrar Repartidor</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
